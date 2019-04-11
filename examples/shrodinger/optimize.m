@@ -10,6 +10,7 @@ end
 
 
 function solution = optimizeHelper(varargin)
+    warning('off','all');
     inFunction = varargin{1};
     parameters = varargin{2};
     parameterString = "";
@@ -47,5 +48,5 @@ function solution = optimizeHelper(varargin)
         save(fileStr, 'solution');
     end
     
-    
+    warning('on','all');
 end

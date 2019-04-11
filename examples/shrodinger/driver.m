@@ -2,144 +2,141 @@ clc; clear all; close all; beep off; curr_dir = dir;
 
 %% User defined parameters.
 
-% Parameters
-p.a = 3; % a > 0
-p.gamma = 7; % gamma >= 1
-
-% Controls
-L = 299;
-num_homological_equations = 12;
-N = 2001; % degree of cheb polynomial
-
-%% Get all parameters
-fprintf(strcat('Manifold for Shrodingers equation with parameters, \n', ...
-    'a=', num2str(p.a,'%.1f'), ', gamma=', num2str(p.gamma,'%.1f'), ', L=', ...
-    num2str(L, '%.1f'), ', ChebNodes(N)=', num2str(N), ', HomEqs=', ...
-    num2str(num_homological_equations),'\n\n'));
-
-scl = 0.2;
+% System Parameters (a > 0, gamma >= 1)
+p.a = 3;
+p.gamma = 7;
 p.mu = (p.a-sqrt(p.gamma^2-1))/(p.a+sqrt(p.gamma^2-1));
 p.nu = 1/(p.a+sqrt(p.gamma^2-1));
 
-%% Set up profile solution as a function.
-fprintf('n=0, Loading function\n\n');
-profile_fun = @(x) profile(x);
+% Controls
+L = 299;
+num_homological_equations = 5;
+chebPoints = 4001; 
+eigScale = 0.2;
+bvpPoints = 30;
 
-%% Load the eigenvalue and eigenfunction.
-fprintf('n=1, Loading function\n\n');
-[eig_fun_left, lam] = eigenfunction();
-eig_fun = @(x) deval_left(eig_fun_left, x);
-
-% homological equations to be solved
-n_vals = 2:1:num_homological_equations;
-
-%% Chebyshev interpolation
+% Chebychev setup
+theta = ((0:1:chebPoints-1)+0.5)*pi/chebPoints;
+x0 = cos(theta);
 a = -L;
 b = L;
-
-% Chebyshev nodes
-theta = ((0:1:N-1)+0.5)*pi/N;
-
-% nodes in [a,b]
-x0 = cos(theta);
 x = 0.5*(a+b)+0.5*(b-a)*x0; 
 
-% Transformation to get Chebyshev coefficients
-Id2 = (2/N)*speye(N);
-Id2(1,1) = Id2(1,1)/2;
-Tcf = Id2*cos(theta.'*(0:1:N-1)).';
+%% Form P
 
-%% Get the Chebyshev coefficients for the profile (on the interal [-L,L])
-F0 = zeros(N,4);
-for j = 1:N
-   F0(j,:) = profile_fun(x(j));
+% Get the profile
+fprintf('n=0, Loading function\n\n');
+P{1} = @(x) profile(x);
+
+% Get the eigenfunction
+fprintf('n=1, Loading function\n\n');
+[eig_fun_left, lam] = eigenfunction();
+P{2} = @(x) deval_left(eig_fun_left, x).';
+
+% Form the homological equations
+nvals = 2:num_homological_equations;
+for n=nvals
+    fprintf(strcat('n=', num2str(n), ','));
+    getHomEqFast = optimize(@getHomEq);
+    P = getHomEqFast(x,P,n,L,@ode_fun,@bc,lam,p,bvpPoints);
+    fprintf("\n\n");
 end
 
-for j = 1:4
-    [cf,fun] = get_chebyshev_coefficients(F0(:,j),a,b,'first kind');
-    P{1}{j} = fun;
-end
+%% User defined parameters for finite difference
+xgrid = linspace(-10,10, 1000);
+tpoints = 50;
+sigma0 = 0.5;
+sigma1 = 0.6;
 
+%% Dependant parameters for finite difference
 
-%% Get the Chebyshev coefficients for the eigenfunction (on the interal [-L,0])
-F1 = zeros(N,4);
-for j = 1:N
-    F1(j,:) = eig_fun(x(j));
-end
-
-for j = 1:4
-    [cf,fun] = get_chebyshev_coefficients(scl*F1(:,j),a,b,'first kind');
-    P{2}{j} = fun;
-
-end
-
-%% Find the homological equations, loading, generating, saving
-
-options = bvpset('RelTol', 1e-6, 'AbsTol', 1e-8,'Nmax', 20000);
-cnt = 0;
-
-for n = n_vals
-    
-    % data_a_gamma_L_chebychev_homologicalEq.mat
-    fileName = strcat(pwd,'/generated/',strrep(strcat('data-', num2str(p.a,'%.10f'), '-', ...
-        num2str(p.gamma,'%.10f'), '-', num2str(L, '%.2f'), '-', ...
-        num2str(N), '-',num2str(n)), '.', 'p'), '.mat');
-    
-    % If it exists,
-    if exist(fileName, 'file') == 2
-        fprintf(strcat('n=', num2str(n), ', Loading function\n\n'));
-        ld = load(fileName);
-        P{n+1} = ld.homEq;
-        
-    % If it doesn't exist
-    else
-        fprintf(strcat('n=', num2str(n), ', Generating function\n\n'));
-        ode_handle = @(x,y)(ode_fun(x,y,P,n,lam,p));
-        bc_handle = @(ya,yb)(bc(ya,yb,n,lam,p)); 
-        total_fun = @(x)[P{n}{1}(x);P{n}{2}(x);P{n}{3}(x);P{n}{4}(x)];
-        solinit = bvpinit(linspace(a,b,30),total_fun);
-        sol = bvp5c(ode_handle,bc_handle,solinit,options);  
-        temp = deval(sol,x);
-
-        for j = 1:4
-            [cf,fun] = get_chebyshev_coefficients(temp(j,:),a,b,'first kind');
-            P{n+1}{j} = fun;
-        end
-        homEq = P{n+1};
-        save(fileName, 'homEq');
-    end
-
-    
-
-end
-
-%% test the method
-
-% Plot
+% Prepare u0 and u1
 fprintf('Preparing graphs\n\n');
 figure;
 hold on;
+u0 = zeros(2, length(xgrid));
+u1 = zeros(2, length(xgrid));
 
-% Choose sigma values
-sigma = linspace(0,0.5,2);
-xgrid = linspace(-100,100,1000);
-
-for i = 1:size(sigma,2)
-    i;
-    currSigma = sigma(1,i);
-    u = zeros(2,length(xgrid));
-    for j = 0:num_homological_equations
-        y1 = P{j+1}{1}(xgrid).';
-        y2 = P{j+1}{3}(xgrid).';
-        u = u+currSigma^j*[y1;y2];
-    end
-    
-    plot(xgrid, real(u));
+for j = 0:num_homological_equations;
+    temp = P{j+1}(xgrid);
+    y1 = temp(1,:);
+    y2 = temp(3,:);
+    u0 = u0 + sigma0^j*[y1;y2];
+    u1 = u1 + sigma1^j*[y1;y2];
 end
-
+   
+% Plot u0 and u1
+plot(xgrid, real(u0));
+plot(xgrid, real(u1));
 drawnow;
 
-% Format for saving files is,
-% data_a_gamma_L_chebychev_homologicalEq
+%% Prepare for finite difference.
+T = (log(sigma1)-log(sigma0))/real(lam)
+tgrid = linspace(0,T,tpoints);
+lambdagrid = exp((tgrid)*real(lam)+log(sigma0));
+K = tgrid(1,2) - tgrid(1,1);
+H = xgrid(1,2) - xgrid(1,1);
+tol = 1e-10;
+un = u0;
+
+
+%% Plot finite difference progression.
+for i = 2:tpoints
+    % tgrid(i)
+    
+    % Update the boundary values.
+    sigman = lambdagrid(i);
+    bc_L = [0;0];
+    bc_R = [0;0];
+    d_bc_L = [0;0];
+    d_bc_R = [0;0];
+    
+    % Produce the boundary conditions.
+    temp_L = zeros(4,1);
+    temp_R = zeros(4,1);
+    for j = 0:num_homological_equations;
+        temp_L = P{j+1}(xgrid(1));
+        temp_R = P{j+1}(xgrid(end));
+        bc_L = bc_L + sigman^j*[temp_L(1,:); temp_L(3,:)];
+        bc_R = bc_R + sigman^j*[temp_R(1,:); temp_R(3,:)];
+        d_bc_L = d_bc_L + sigman^j*[temp_L(2,:); temp_L(4,:)];
+        d_bc_R = d_bc_R + sigman^j*[temp_R(2,:); temp_R(4,:)];
+    end
+    
+    % Create boundary functions
+    bc_L_fun = @(U_n,U_o,K,H,p)(U_n(:,1)-bc_L);
+    bc_R_fun = @(U_n,U_o,K,H,p)(U_n(:,end)-bc_R);
+    bc_L_jac_fun = @(U_n,U_o,K,H,p)eye(2);
+    bc_R_jac_fun = @(U_n,U_o,K,H,p)eye(2);
+    
+    % Update the initial guess.
+    uo = un;
+    un = finite_diff_advance(un,uo,K,H,p,tol,@fd_F,@fd_jac,bc_L_fun,bc_R_fun,bc_L_jac_fun,bc_R_jac_fun);
+    
+    % Verify the accuracy of the method. 
+    % It looks like it is performing correctly with error very small.
+    %     u = (un+uo)/2;
+    %     ux = (u(:,3:end) - u(:,1:end-2))/(2*H);
+    %     ut = (un-uo)/K;
+    %     uxx = (u(:,3:end) - 2*u(:,2:end-1) + u(:,1:end-2))/(H^2);
+    %     u = u(:,2:end-1);
+    %     ut = ut(:,2:end-1);
+    %     temp = ut(1,:) + uxx(2,:) - p.mu*u(2,:)+(u(1,:).^2 + u(2,:).^2).*u(2,:);
+    %     temp2 = ut(2,:) - uxx(1,:) + u(1,:) - (u(1,:).^2 + u(2,:).^2).*u(1,:)+2*p.nu*u(2,:);
+% 
+%     fprintf("error");
+%     max(temp(1,:))
+%     max(temp2(1,:))
+   
+    clf;
+    hold on;
+    plot(xgrid, real(u0), 'LineWidth',2);
+    plot(xgrid, real(u1));
+    plot(xgrid, real(un), '-r','LineWidth',2);
+    drawnow;
+    %pause(0.01);
+end
+
+
 
 
