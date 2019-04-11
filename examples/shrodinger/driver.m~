@@ -9,8 +9,8 @@ p.mu = (p.a-sqrt(p.gamma^2-1))/(p.a+sqrt(p.gamma^2-1));
 p.nu = 1/(p.a+sqrt(p.gamma^2-1));
 
 % Controls
-L = 20;
-num_homological_equations = 7;
+L = ;
+num_homological_equations = 11;
 chebPoints = 4001; 
 eigScale = 0.2;
 bvpPoints = 30;
@@ -44,7 +44,7 @@ end
 
 %% User defined parameters for finite difference
 xgrid = linspace(-10,10, 1000);
-tpoints = 100;
+tpoints = 50;
 sigma0 = 0.1;
 sigma1 = 0.21;
 
