@@ -1,3 +1,5 @@
+
+addpath(strcat(pwd,'/../../core/matlab'))
 beep off; clc; clear all; close all;
 
 %

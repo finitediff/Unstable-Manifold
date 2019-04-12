@@ -4,14 +4,9 @@
 % A driver that finds the unstable manifold of Nagumo's equation found by
 % Leaving negative infinity in the direction of the eigenfunction.
 % Compares the results with the finite difference method found in stablab
-% in order to confirm accuracy.  To run this file, the user must:
-%
-% 1. Add finite_diff_advance, a function found in the time evolution 
-% portion of stablab.
-%
-% 2. Add the "core/matlab" folder found in this package.  This folder
-% contains functions needed to solve chebychev polynomials.
+% in order to confirm accuracy.
 
+addpath(strcat(pwd,'/../../core/matlab'))
 clc; clear all; close all; beep off; curr_dir = cd;
 
 %% User defined parameters
@@ -28,18 +23,20 @@ n_vals = 2:1:num_homological_equations;  % homological equations.
 %% Find the homological equations, P{n}.fun
 
 % Unstable wave solution with coordinates to interval [-L,0]
+fprintf('n=0, Loading function\n\n');
 P{1}.fun = @(x)([sqrt(2)*sech(x); ...
                 sqrt(2)*(-tanh(x).*sech(x))]);
 
 % Eigenfunction
+fprintf('n=1, Loading function\n\n');
 P{2}.fun = @(x) scl*eig_fun(x);
 
-% Solve for each P{n} recursively
+% Solve for the homological P terms
 options = bvpset('RelTol', 1e-6, 'AbsTol', 1e-8,'Nmax', 20000);
 cnt = 0;
 for n = n_vals
     
-    fprintf('n = %4g\n',n);
+    fprintf(strcat('n=', num2str(n), ', Generating function\n\n'));
     
     ode_handle = @(x,y)(ode_fun(x,y,P,n,lam));
     bc_handle = @(ya,yb)(bc_fun(ya,yb,n)); 
@@ -73,15 +70,14 @@ for n = n_vals
 end
 
 %% Plot the homological equations
-
+fprintf('Preparing graphs\n\n');
 x = linspace(-L,L,1000);
 
 hold on;
 for j = 1:num_homological_equations
-    fprintf('j = %4g\n',j);
     y = P{j}.fun(x);
     plot(x,y,'LineWidth',2)
-    nrm = max(max(abs(y)))
+    nrm = max(max(abs(y)));
 end
 
 

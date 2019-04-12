@@ -13,6 +13,7 @@
 % contains functions needed to solve chebychev polynomials.
 
 clc; clear all; close all; beep off; curr_dir = cd;
+addpath(strcat(pwd,'/../../core/matlab'))
 
 %% User defined parameters
 

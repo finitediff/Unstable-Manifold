@@ -1,4 +1,5 @@
 clc; clear all; close all; beep off; curr_dir = dir;
+addpath(strcat(pwd,'/../../core/matlab'))
 
 %% User defined parameters.
 
