@@ -10,8 +10,8 @@ p.mu = (p.a-sqrt(p.gamma^2-1))/(p.a+sqrt(p.gamma^2-1));
 p.nu = 1/(p.a+sqrt(p.gamma^2-1));
 
 % Controls
-L = 20;
-num_homological_equations = 7;
+L = 299;
+num_homological_equations = 20;
 chebPoints = 4001; 
 eigScale = 0.2;
 bvpPoints = 30;
@@ -46,8 +46,13 @@ end
 %% User defined parameters for finite difference
 xgrid = linspace(-10,10, 1000);
 tpoints = 100;
+deltaT = 1;
 sigma0 = 0.1;
-sigma1 = 0.21;
+sigma1 = sigma0*exp(lam*deltaT);
+
+
+tgrid = linspace(0,deltaT,tpoints);
+lambdagrid = sigma0*exp(lam*tgrid);
 
 %% Dependant parameters for finite difference
 
@@ -76,9 +81,7 @@ plot(xgrid, real(u1));
 drawnow;
 
 %% Prepare for finite difference.
-T = (log(sigma1)-log(sigma0))/abs(lam)
-tgrid = linspace(0,T,tpoints);
-lambdagrid = exp((tgrid)*abs(lam)+log(sigma0));
+T = deltaT;
 K = tgrid(1,2) - tgrid(1,1);
 H = xgrid(1,2) - xgrid(1,1);
 tol = 1e-10;
@@ -87,7 +90,7 @@ un = u0;
 
 %% Plot finite difference progression.
 for i = 2:tpoints
-    % tgrid(i)
+    tgrid(i)
     
     % Update the boundary values.
     sigman = lambdagrid(i);
