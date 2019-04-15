@@ -11,7 +11,7 @@ p.nu = 1/(p.a+sqrt(p.gamma^2-1));
 
 % Controls
 L = 299;
-num_homological_equations = 20;
+num_homological_equations = 9;
 chebPoints = 4001; 
 eigScale = 0.2;
 bvpPoints = 30;
@@ -44,8 +44,8 @@ for n=nvals
 end
 
 %% User defined parameters for finite difference
-xgrid = linspace(-10,10, 1000);
-tpoints = 100;
+xgrid = linspace(-10,10, 1001); % 1001 2001 4001
+tpoints = 101; % 101 401 1601 
 deltaT = 1;
 sigma0 = 0.1;
 sigma1 = sigma0*exp(lam*deltaT);
@@ -140,7 +140,7 @@ for i = 2:tpoints
     hold on;
     plot(xgrid, real(u0), 'LineWidth',2);
     plot(xgrid, real(u1));
-    plot(xgrid, real(un), '-r','LineWidth',2);
+    plot(xgrid, real(un),'LineWidth',2);
     drawnow;
     %pause(0.01);
 end

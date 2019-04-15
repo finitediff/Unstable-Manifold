@@ -89,14 +89,22 @@ for j = 1:num_homological_equations
 end
 
 
-%% Test the method
+%% User defined FD parameters
+t1 = 0.5;
+xpoints = 401; % 401 801 1601
+tpoints = 101; % 101 401 1601
+xgrid = linspace(-20,20, xpoints);
+tgrid = linspace(0,t1,tpoints);
+tpoints = 100;
+sigma0 = 0.1;
+sigma1 = sigma0*exp(lam*t1);
+
+%% Produce sigma values.
 
 figure;
 hold on;
 
 % Plot the solution at sigma0
-sigma0 = 0.1;
-xgrid = linspace(-L,L,40*L+1);
 u0 = zeros(1,length(xgrid));
 for j = 0:num_homological_equations
     y = P{j+1}.fun(xgrid);
@@ -105,7 +113,6 @@ end
 plot(xgrid,u0,'-k','LineWidth',2);
 
 % Plot the solution at sigma1
-sigma1 = 0.7;
 u1 = zeros(1,length(xgrid));
 for j = 0:num_homological_equations
     y = P{j+1}.fun(xgrid);
@@ -125,7 +132,6 @@ bc_R_jac_fun = @(U_n,U_o,K,H,p) 1;
 
 % Set up grid
 T = (log(sigma1)-log(sigma0))/3
-tgrid = linspace(0,T,200);
 K = tgrid(2)-tgrid(1);
 H = xgrid(2)-xgrid(1);
 

@@ -197,13 +197,17 @@ fprintf('Preparing graphs\n\n');
 figure;
 hold on;
 
-% User defined FD variables
+%% User defined FD parameters
+t1 = 0.25;
+xpoints = 801; % 201 401 801
+tpoints = 1601; % 101 401 1601
+xgrid = linspace(-10,10, xpoints);
+tgrid = linspace(0,t1,tpoints);
 sigma0 = 0.1;
-sigma1 = 0.5;
-xgrid = linspace(a,b,1000);
-tPoints = 200;
+sigma1 = sigma0*exp(lam*t1);
 
-% Generate u0 and u1
+%% Generate u0 and u1.
+
 u0 = zeros(2,length(xgrid));
 u1 = zeros(2,length(xgrid));
 for j = 0:num_homological_equations
@@ -223,7 +227,6 @@ bc_R_jac_fun = @(U_n,U_o,K,H,p)eye(2);
 
 
 T = (log(sigma1)-log(sigma0))/lam;
-tgrid = linspace(0,T,tPoints);
 K = tgrid(2)-tgrid(1);
 H = xgrid(2)-xgrid(1);
 
